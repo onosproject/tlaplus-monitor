@@ -63,7 +63,7 @@ public class Json {
     }
   }
 
-  private static JsonNode getNode(Value value) throws IOException {
+  static JsonNode getNode(IValue value) throws IOException {
     if (value instanceof RecordValue) {
       return getObjectNode((RecordValue) value);
     } else if (value instanceof TupleValue) {
@@ -95,7 +95,7 @@ public class Json {
     return new ArrayNode(new JsonNodeFactory(true), elements);
   }
 
-  private static Value getValue(JsonNode node) throws IOException {
+  static Value getValue(JsonNode node) throws IOException {
     switch (node.getNodeType()) {
       case ARRAY:
         return getTupleValue(node);

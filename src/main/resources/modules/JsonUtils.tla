@@ -1,4 +1,4 @@
-------------------------------- MODULE Traces ------------------------------
+----------------------------- MODULE JsonUtils -----------------------------
 
 LOCAL INSTANCE TLC
 LOCAL INSTANCE Integers
