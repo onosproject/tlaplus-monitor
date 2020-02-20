@@ -41,7 +41,7 @@ public class Kafka {
   private static ObjectMapper mapper = new ObjectMapper();
 
   @TLAPlusOperator(identifier = "KafkaConsume", module = "Kafka")
-  public static IValue consume(String topic) throws IOException {
+  public static synchronized IValue consume(String topic) throws IOException {
     if (records == null || !records.hasNext()) {
       records = getConsumer().poll(Duration.ofMillis(Long.MAX_VALUE)).iterator();
     }
@@ -51,38 +51,30 @@ public class Kafka {
   }
 
   @TLAPlusOperator(identifier = "KafkaProduce", module = "Kafka")
-  public static void produce(String topic, IValue value) throws IOException {
+  public static synchronized void produce(String topic, IValue value) throws IOException {
     getProducer().send(new ProducerRecord<>(topic, Json.getNode(value).toString()));
   }
 
   private static Consumer<String, String> getConsumer() throws IOException {
     if (consumer == null) {
-      synchronized (Kafka.class) {
-        if (consumer == null) {
-          Properties config = new Properties();
-          // TODO
-          config.put("group.id", "foo");
-          config.put("client.id", InetAddress.getLocalHost().getHostName());
-          config.put("bootstrap.servers", "host1:9092,host2:9092");
-          consumer = new KafkaConsumer<>(config);
-        }
-      }
+      Properties config = new Properties();
+      // TODO
+      config.put("group.id", "foo");
+      config.put("client.id", InetAddress.getLocalHost().getHostName());
+      config.put("bootstrap.servers", "host1:9092,host2:9092");
+      consumer = new KafkaConsumer<>(config);
     }
     return consumer;
   }
 
   private static Producer<String, String> getProducer() throws IOException {
     if (producer == null) {
-      synchronized (Kafka.class) {
-        if (producer == null) {
-          Properties config = new Properties();
-          // TODO
-          config.put("client.id", InetAddress.getLocalHost().getHostName());
-          config.put("bootstrap.servers", "host1:9092,host2:9092");
-          config.put("acks", "all");
-          producer = new KafkaProducer<>(config);
-        }
-      }
+      Properties config = new Properties();
+      // TODO
+      config.put("client.id", InetAddress.getLocalHost().getHostName());
+      config.put("bootstrap.servers", "host1:9092,host2:9092");
+      config.put("acks", "all");
+      producer = new KafkaProducer<>(config);
     }
     return producer;
   }
