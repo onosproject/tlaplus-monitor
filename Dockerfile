@@ -6,7 +6,7 @@ WORKDIR /tmp
 RUN mkdir -p /opt/tlaplus/lib && mkdir -p /opt/tlaplus/module
 RUN wget https://tla.msr-inria.inria.fr/tlatoolbox/ci/dist/tla2tools.jar && \
     mv tla2tools.jar /opt/tlaplus/lib/tla2tools.jar
-ADD target/model-checker-0.1-jar-with-dependencies.jar /opt/tlaplus/lib
+ADD target/tlaplus-monitor-0.1-jar-with-dependencies.jar /opt/tlaplus/lib
 
 ADD src/main/resources/modules/JsonUtils.tla /opt/tlaplus/module
 ADD src/main/resources/modules/KafkaUtils.tla /opt/tlaplus/module

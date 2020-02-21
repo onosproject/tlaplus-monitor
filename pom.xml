@@ -24,8 +24,8 @@
     </parent>
 
     <groupId>org.onosproject</groupId>
-    <artifactId>model-checker</artifactId>
-    <name>Model Checker</name>
+    <artifactId>tlaplus-monitor</artifactId>
+    <name>TLA+ Conformance Monitor</name>
     <version>0.1</version>
 
     <properties>
@@ -144,7 +144,7 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <repository>onosproject/model-checker</repository>
+                    <repository>onosproject/tlaplus-monitor</repository>
                     <tag>${dockerfile.version}</tag>
                 </configuration>
             </plugin>
