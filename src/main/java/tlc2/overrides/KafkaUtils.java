@@ -51,7 +51,9 @@ public class KafkaUtils {
   @TLAPlusOperator(identifier = "KafkaConsume", module = "KafkaUtils")
   public static synchronized IValue consume(StringValue topic) throws IOException {
     if (records == null || !records.hasNext()) {
-      records = getConsumer(topic.val.toString()).poll(Duration.ofMillis(Long.MAX_VALUE)).iterator();
+      records = getConsumer(topic.val.toString())
+          .poll(Duration.ofMillis(Long.MAX_VALUE))
+          .iterator();
     }
     ConsumerRecord<String, String> record = records.next();
     JsonNode node = mapper.readTree(record.value());
@@ -75,6 +77,7 @@ public class KafkaUtils {
       config.setProperty("auto.commit.interval.ms", "1000");
       config.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
       config.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
+      config.setProperty("client.dns.lookup", "use_all_dns_ips");
       consumer = new KafkaConsumer<>(config);
       consumer.subscribe(Collections.singleton(topic));
       consumers.put(topic, consumer);
