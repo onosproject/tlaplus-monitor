@@ -19,7 +19,6 @@ package tlc2.overrides;
  * TLC overrides registry.
  */
 public class TLCOverrides implements ITLCOverrides {
-
   @SuppressWarnings("rawtypes")
   @Override
   public Class[] get() {

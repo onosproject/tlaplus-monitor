@@ -12,8 +12,8 @@ RUN wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-datab
     mv jackson-databind-2.10.2.jar /opt/tlaplus/lib/jackson-databind-2.10.2.jar
 RUN wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annotations/2.10.2/jackson-annotations-2.10.2.jar && \
     mv jackson-annotations-2.10.2.jar /opt/tlaplus/lib/jackson-annotations-2.10.2.jar
-RUN wget https://repo1.maven.org/maven2/org/apache/kafka/kafka_2.13/2.4.0/kafka_2.13-2.4.0.jar && \
-    mv kafka_2.13-2.4.0.jar /opt/tlaplus/lib/kafka_2.13-2.4.0.jar
+RUN wget https://repo1.maven.org/maven2/org/apache/kafka/kafka-clients/2.4.0/kafka-clients-2.4.0.jar && \
+    mv kafka-clients-2.4.0.jar /opt/tlaplus/lib/kafka-clients-2.4.0.jar
 
 ADD src/main/resources/modules/JsonUtils.tla /opt/tlaplus/module
 ADD src/main/resources/modules/KafkaUtils.tla /opt/tlaplus/module

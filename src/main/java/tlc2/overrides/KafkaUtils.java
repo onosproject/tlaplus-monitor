@@ -33,6 +33,8 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import tlc2.value.IValue;
+import tlc2.value.impl.BoolValue;
+import tlc2.value.impl.StringValue;
 
 /**
  * Kafka utilities.
@@ -46,19 +48,20 @@ public class KafkaUtils {
   private static Iterator<ConsumerRecord<String, String>> records;
   private static ObjectMapper mapper = new ObjectMapper();
 
-  @TLAPlusOperator(identifier = "KafkaConsume", module = "Kafka")
-  public static synchronized IValue consume(String topic) throws IOException {
+  @TLAPlusOperator(identifier = "KafkaConsume", module = "KafkaUtils")
+  public static synchronized IValue consume(StringValue topic) throws IOException {
     if (records == null || !records.hasNext()) {
-      records = getConsumer(topic).poll(Duration.ofMillis(Long.MAX_VALUE)).iterator();
+      records = getConsumer(topic.val.toString()).poll(Duration.ofMillis(Long.MAX_VALUE)).iterator();
     }
     ConsumerRecord<String, String> record = records.next();
     JsonNode node = mapper.readTree(record.value());
     return JsonUtils.getValue(node);
   }
 
-  @TLAPlusOperator(identifier = "KafkaProduce", module = "Kafka")
-  public static synchronized void produce(String topic, IValue value) throws IOException {
-    getProducer().send(new ProducerRecord<>(topic, JsonUtils.getNode(value).toString()));
+  @TLAPlusOperator(identifier = "KafkaProduce", module = "KafkaUtils")
+  public static synchronized IValue produce(StringValue topic, IValue value) throws IOException {
+    getProducer().send(new ProducerRecord<>(topic.val.toString(), JsonUtils.getNode(value).toString()));
+    return BoolValue.ValTrue;
   }
 
   private static Consumer<String, String> getConsumer(String topic) throws IOException {
