@@ -14,6 +14,8 @@ RUN wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annot
     mv jackson-annotations-2.10.2.jar /opt/tlaplus/lib/jackson-annotations-2.10.2.jar
 RUN wget https://repo1.maven.org/maven2/org/apache/kafka/kafka-clients/2.4.0/kafka-clients-2.4.0.jar && \
     mv kafka-clients-2.4.0.jar /opt/tlaplus/lib/kafka-clients-2.4.0.jar
+RUN wget https://repo1.maven.org/maven2/org/slf4j/slf4j-api/1.7.28/slf4j-api-1.7.28.jar && \
+    mv slf4j-api-1.7.28.jar /opt/tlaplus/lib/slf4j-api-1.7.28.jar
 
 ADD src/main/resources/modules/JsonUtils.tla /opt/tlaplus/module
 ADD src/main/resources/modules/KafkaUtils.tla /opt/tlaplus/module
