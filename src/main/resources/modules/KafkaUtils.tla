@@ -1,4 +1,4 @@
-------------------------------- MODULE Kafka ------------------------------
+---------------------------- MODULE KafkaUtils ----------------------------
 
 LOCAL INSTANCE TLC
 LOCAL INSTANCE Integers

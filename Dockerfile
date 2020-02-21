@@ -15,6 +15,8 @@ RUN wget https://repo1.maven.org/maven2/com/fasterxml/jackson/core/jackson-annot
 RUN wget https://repo1.maven.org/maven2/org/apache/kafka/kafka_2.13/2.4.0/kafka_2.13-2.4.0.jar && \
     mv kafka_2.13-2.4.0.jar /opt/tlaplus/lib/kafka_2.13-2.4.0.jar
 
+ADD src/main/resources/modules/JsonUtils.tla /opt/tlaplus/module
+ADD src/main/resources/modules/KafkaUtils.tla /opt/tlaplus/module
 ADD target/model-checker-0.1.jar /opt/tlaplus/lib
 
 ADD bin/tlc /usr/local/bin/tlc

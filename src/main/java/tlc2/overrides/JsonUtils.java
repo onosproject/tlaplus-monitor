@@ -32,7 +32,7 @@ import util.UniqueString;
 /**
  * JSON utilities.
  */
-public class Json {
+public class JsonUtils {
   @TLAPlusOperator(identifier = "JsonDeserialize", module = "JsonUtils")
   public static IValue deserialize(final StringValue absolutePath) throws IOException {
     ObjectMapper mapper = new ObjectMapper();
