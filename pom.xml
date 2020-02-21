@@ -23,30 +23,48 @@
         <version>7</version>
     </parent>
 
-    <groupId>io.github.kuujo</groupId>
-    <artifactId>real-time-model-checker</artifactId>
+    <groupId>org.onosproject</groupId>
+    <artifactId>model-checker</artifactId>
     <name>Model Checker</name>
-    <version>1.0.0</version>
+    <version>0.1</version>
 
     <properties>
+        <jv>${project.version}</jv>
+
+        <!-- Java -->
         <java.version>1.8</java.version>
+
+        <!-- Core dependencies -->
+        <kafka.version>2.4.0</kafka.version>
+        <jackson.core.version>2.9.0</jackson.core.version>
+        <jackson.databind.version>2.9.10.1</jackson.databind.version>
+
+        <!-- Maven plugins -->
+        <maven.source.plugin.version>2.2.1</maven.source.plugin.version>
+        <maven.compiler.plugin.version>3.7.0</maven.compiler.plugin.version>
+        <maven-jar-plugin.version>3.1.0</maven-jar-plugin.version>
+        <maven.resources.plugin.version>2.6</maven.resources.plugin.version>
+        <maven.dependency.plugin.version>2.7</maven.dependency.plugin.version>
+        <maven.dockerfile.plugin.version>1.4.3</maven.dockerfile.plugin.version>
+
+        <dockerfile.version>latest</dockerfile.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.13</artifactId>
-            <version>2.4.0</version>
+            <version>${kafka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
-            <version>2.9.0</version>
+            <version>${jackson.core.version}</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
-            <version>2.9.10.1</version>
+            <version>${jackson.databind.version}</version>
         </dependency>
         <dependency>
             <groupId>tlatoolbox</groupId>
@@ -63,6 +81,7 @@
                 <directory>src/main/resources/modules</directory>
             </resource>
         </resources>
+
         <extensions>
             <extension>
                 <groupId>kr.motd.maven</groupId>
@@ -70,6 +89,7 @@
                 <version>1.5.0.Final</version>
             </extension>
         </extensions>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -85,6 +105,26 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>3.1.0</version>
+            </plugin>
+
+            <plugin>
+                <groupId>com.spotify</groupId>
+                <artifactId>dockerfile-maven-plugin</artifactId>
+                <version>${maven.dockerfile.plugin.version}</version>
+                <inherited>false</inherited>
+                <executions>
+                    <execution>
+                        <id>default</id>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>push</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <repository>onosproject/model-checker</repository>
+                    <tag>${dockerfile.version}</tag>
+                </configuration>
             </plugin>
         </plugins>
     </build>

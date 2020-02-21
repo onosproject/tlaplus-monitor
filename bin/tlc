@@ -1,0 +1,3 @@
+#!/bin/bash
+
+java -DTLA-Library=/opt/tlaplus/lib/json-utils.jar -cp /opt/tlaplus/lib/tla2tools.jar:/opt/tlaplus/lib/CommunityModules-202002121931.jar:/opt/tlaplus/lib/jackson-core-2.10.2.jar:/opt/tlaplus/lib/jackson-databind-2.10.2.jar:/opt/tlaplus/lib/jackson-annotations-2.10.2.jar:/opt/tlaplus/lib/json-utils.jar:/opt/tlaplus/module tlc2.TLC $@
