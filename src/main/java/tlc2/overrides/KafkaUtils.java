@@ -70,9 +70,9 @@ public class KafkaUtils {
     Consumer<String, String> consumer = consumers.get(topic);
     if (consumer == null) {
       Properties config = new Properties();
-      config.put("bootstrap.servers", KAFKA_SERVERS);
-      config.put("client.id", InetAddress.getLocalHost().getHostName());
-      config.put("group.id", KAFKA_GROUP);
+      config.setProperty("bootstrap.servers", KAFKA_SERVERS);
+      config.setProperty("client.id", InetAddress.getLocalHost().getHostName());
+      config.setProperty("group.id", KAFKA_GROUP);
       config.setProperty("enable.auto.commit", "true");
       config.setProperty("auto.commit.interval.ms", "1000");
       config.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
@@ -88,11 +88,12 @@ public class KafkaUtils {
   private static Producer<String, String> getProducer() throws IOException {
     if (producer == null) {
       Properties config = new Properties();
-      config.put("bootstrap.servers", KAFKA_SERVERS);
-      config.put("client.id", InetAddress.getLocalHost().getHostName());
-      config.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-      config.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-      config.put("acks", "all");
+      config.setProperty("bootstrap.servers", KAFKA_SERVERS);
+      config.setProperty("client.id", InetAddress.getLocalHost().getHostName());
+      config.setProperty("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+      config.setProperty("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+      config.setProperty("client.dns.lookup", "use_all_dns_ips");
+      config.setProperty("acks", "all");
       producer = new KafkaProducer<>(config);
     }
     return producer;
