@@ -1,3 +1,44 @@
 #!/bin/bash
 
-java -DTLA-Library=/opt/tlaplus/lib/tlaplus-monitor-0.1-jar-with-dependencies.jar -cp /opt/tlaplus/lib/tla2tools.jar:/opt/tlaplus/lib/tlaplus-monitor-0.1-jar-with-dependencies.jar:/opt/tlaplus/module tlc2.TLC $@
+args=""
+cont=false
+monitor=false
+trace=""
+alert=""
+
+while (( "$#" )); do
+  case "$1" in
+    -monitor)
+      shift
+      ;;
+    -trace)
+      trace=$2
+      shift 2
+      ;;
+    -alert)
+      alert=$2
+      shift 2
+      ;;
+    -continue)
+      cont=true
+      shift
+      ;;
+    -*)
+      args="$args $1"
+      shift
+      ;;
+    *)
+      args="$args $1"
+      shift
+      ;;
+  esac
+done
+
+if [ "$monitor" = true ]; then
+    if [ "$cont" = false ]; then
+        args="$args -continue"
+    fi
+    TRACE_URI=$trace ALERT_URI=$alert java -DTLA-Library=/opt/tlaplus/lib/tlaplus-monitor-0.1-jar-with-dependencies.jar -cp /opt/tlaplus/lib/tla2tools.jar:/opt/tlaplus/lib/tlaplus-monitor-0.1-jar-with-dependencies.jar:/opt/tlaplus/module tlc2.TLC $args
+else
+    java -DTLA-Library=/opt/tlaplus/lib/tlaplus-monitor-0.1-jar-with-dependencies.jar -cp /opt/tlaplus/lib/tla2tools.jar:/opt/tlaplus/lib/tlaplus-monitor-0.1-jar-with-dependencies.jar:/opt/tlaplus/module tlc2.TLC $args
+fi
