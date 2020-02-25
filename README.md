@@ -2,6 +2,9 @@
 
 This project provides tools for conformance monitoring with [TLA+].
 
+See [Conformance Monitoring with TLA+](docs/README.md) for information about how to deploy and
+use conformance monitoring in µONOS.
+
 ## Docker Image
 
 This project provides a [Docker] image for running the TLA+ model checker (TLC).
