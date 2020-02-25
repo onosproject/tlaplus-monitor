@@ -57,6 +57,7 @@ monitoring on Kafka streams. The monitor uses [TLA+] specifications to evaluate 
 and invariants specified in the chart configuration can detect safety violations in the trace stream.
 
 Several artifacts are required to by the chart:
+
 * `model` - the name of the module to evaluate
 * `modules` - an array of TLA+ module files to mount to the monitor pod
 * `spec` - the specification to evaluate
@@ -64,6 +65,7 @@ Several artifacts are required to by the chart:
 * `next` - the next state relation (required if `spec` is not configured)
 
 Additional options can be used to specify invariants and other constraints on the model checker:
+
 * `invariants` - an array of invariants to check for each trace
 * `constants` - a mapping of constant values to assign to the model
 * `constraints` - an array of state constraints
