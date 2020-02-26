@@ -13,15 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides;
+package tlc2.overrides.sink;
+
+import tlc2.value.IValue;
+
+import java.io.IOException;
 
 /**
- * TLC overrides registry.
+ * Monitoring producer.
  */
-public class TLCOverrides implements ITLCOverrides {
-    @SuppressWarnings("rawtypes")
-    @Override
-    public Class[] get() {
-        return new Class[]{JsonUtils.class, KafkaUtils.class, Traces.class, Alerts.class};
-    }
+public interface Sink {
+    /**
+     * Produces a value.
+     *
+     * @param value the value to produce
+     */
+    void produce(IValue value) throws IOException;
 }
