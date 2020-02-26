@@ -13,20 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.monitoring;
+package tlc2.overrides.source;
 
 import tlc2.value.IValue;
 
 import java.io.IOException;
 
 /**
- * Monitoring producer.
+ * Consumer is a monitoring consumer.
  */
-public interface Producer {
+public interface Source {
     /**
-     * Produces a value.
+     * Consumes a value.
      *
-     * @param value the value to produce
+     * @return the consumed value
      */
-    void produce(IValue value) throws IOException;
+    IValue consume() throws IOException;
 }

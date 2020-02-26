@@ -15,8 +15,8 @@
  */
 package tlc2.overrides;
 
-import tlc2.overrides.monitoring.KafkaProducer;
-import tlc2.overrides.monitoring.Producer;
+import tlc2.overrides.sink.KafkaSink;
+import tlc2.overrides.sink.Sink;
 import tlc2.value.IValue;
 import tlc2.value.impl.BoolValue;
 
@@ -28,36 +28,40 @@ import java.net.URISyntaxException;
  * Alert utilities.
  */
 public class Alerts {
-    private static final String ALERT_URI = "ALERT_URI";
+    private static final String ALERTS_SINK = "ALERTS_SINK";
 
-    private static final Producer producer;
+    private static final Sink SINK;
 
     static {
-        String producerInfo = System.getenv(ALERT_URI);
+        String producerInfo = System.getenv(ALERTS_SINK);
         if (producerInfo != null) {
             try {
                 URI producerUri = new URI(producerInfo);
                 switch (producerUri.getScheme()) {
                     case "kafka":
-                        producer = new KafkaProducer(producerUri.getAuthority(), producerUri.getPort(), producerUri.getPath());
+                        String path = producerUri.getPath().substring(1);
+                        if (path.equals("")) {
+                            throw new IllegalStateException("No topic specified");
+                        }
+                        SINK = new KafkaSink(producerUri.getHost(), producerUri.getPort(), path);
                         break;
                     default:
-                        throw new IllegalStateException("unknown producer scheme");
+                        throw new IllegalStateException("Unknown producer scheme");
                 }
             } catch (URISyntaxException | IOException e) {
                 throw new IllegalStateException(e);
             }
         } else {
-            producer = null;
+            SINK = null;
         }
     }
 
-    @TLAPlusOperator(identifier = "Alert", module = "Alerts")
-    public static synchronized IValue alert(IValue value) throws IOException {
-        if (producer == null) {
+    @TLAPlusOperator(identifier = "PublishAlert", module = "Alerts")
+    public static synchronized IValue publishAlert(IValue value) throws IOException {
+        if (SINK == null) {
             throw new IllegalStateException("No producer configured. Is TLC running in monitor mode?");
         }
-        producer.produce(value);
+        SINK.produce(value);
         return BoolValue.ValTrue;
     }
 }

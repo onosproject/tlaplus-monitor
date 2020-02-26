@@ -15,9 +15,9 @@
  */
 package tlc2.overrides;
 
-import tlc2.overrides.monitoring.Consumer;
-import tlc2.overrides.monitoring.KafkaConsumer;
-import tlc2.value.IValue;
+import tlc2.overrides.source.KafkaSource;
+import tlc2.overrides.source.Source;
+import tlc2.value.impl.Value;
 
 import java.io.IOException;
 import java.net.URI;
@@ -27,35 +27,39 @@ import java.net.URISyntaxException;
  * Trace utilities.
  */
 public class Traces {
-    private static final String TRACE_URI = "TRACE_URI";
+    private static final String TRACES_SOURCE = "TRACES_SOURCE";
 
-    private static final Consumer consumer;
+    private static final Source SOURCE;
 
     static {
-        String consumerInfo = System.getenv(TRACE_URI);
+        String consumerInfo = System.getenv(TRACES_SOURCE);
         if (consumerInfo != null) {
             try {
                 URI consumerUri = new URI(consumerInfo);
                 switch (consumerUri.getScheme()) {
                     case "kafka":
-                        consumer = new KafkaConsumer(consumerUri.getAuthority(), consumerUri.getPort(), consumerUri.getPath());
+                        String path = consumerUri.getPath().substring(1);
+                        if (path.equals("")) {
+                            throw new IllegalStateException("No topic specified");
+                        }
+                        SOURCE = new KafkaSource(consumerUri.getHost(), consumerUri.getPort(), path);
                         break;
                     default:
-                        throw new IllegalStateException("unknown consumer scheme");
+                        throw new IllegalStateException("Unknown consumer scheme");
                 }
             } catch (URISyntaxException | IOException e) {
                 throw new IllegalStateException(e);
             }
         } else {
-            consumer = null;
+            SOURCE = null;
         }
     }
 
     @TLAPlusOperator(identifier = "NextTrace", module = "Traces")
-    public static synchronized IValue nextTrace() throws IOException {
-        if (consumer == null) {
+    public static synchronized Value nextTrace() throws IOException {
+        if (SOURCE == null) {
             throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
         }
-        return consumer.consume();
+        return (Value) SOURCE.consume();
     }
 }

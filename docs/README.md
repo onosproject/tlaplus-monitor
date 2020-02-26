@@ -17,7 +17,7 @@ single monitor pod per [TLA+] specification.
 
 ### Prerequisites
 
-The conformance monitor requires on an existing [Kafka] deployment from which to consume traces.
+The conformance monitor currently requires Kafka to stream traces to TLC.
 
 To deploy Kafka using Helm, first add the incubator repository to your Helm configuration:
 
@@ -106,11 +106,11 @@ Spec == Init /\ [][Next]_<<vars>>
 
 Typically, the TLA+ model checker, TLC, computes and evaluates every state that can be reached
 by the spec according to its initial state and next state relation. Conformance monitoring specs
-operate on an infinite stream of traces, using the `KafkaConsume` operator to consume and check
+operate on an infinite stream of traces, using the `NextTrace` operator to consume and check
 traces in near-real time:
 
 ```
-INSTANCE KafkaUtils
+INSTANCE Traces
 
 \* The previous trace version
 VARIABLE prevVersion
@@ -121,9 +121,9 @@ VARIABLE nextVersion
 \* A list of variables in the spec
 vars == <<prevVersion, nextVersion>>
 
-\* Read a trace record from the Kafka stream and update the previous and next versions
+\* Read a trace record from the stream and update the previous and next versions
 Read ==
-    LET record == KafkaConsume("traces")
+    LET record == NextTrace
     IN
        /\ PrintT(record)
        /\ prevVersion' = nextVersion
@@ -142,24 +142,26 @@ Next ==
 
 The final component of a conformance spec is the invariant(s). Invariants are predicates
 that describe the properties of a well behaved (conforming) system. After each trace is
-consumed and processed from the Kafka stream, TLC will evaluate invariants to determine
+consumed and processed from the traces stream, TLC will evaluate invariants to determine
 whether the system's state conforms to its safety properties:
 
 ```
 \* An invariant verifying that the trace version is monotonically increasing
-TypeOK == prevVersion # 0 /\ nextVersion # 0 => prevVersion < nextVersion
+TypeOK == nextVersion # 0 => nextVersion < prevVersion
 ```
 
-In the event the invariant is violated by the system traces, the `KafkaProduce` operator
+In the event the invariant is violated by the system traces, the `PublishAlert` operator
 can be used to publish an alert.
 
 ```
+INSTANCE Alerts
+
 \* An invariant verifying that the trace version is monotonically increasing
 TypeOK ==
-    \/ prevVersion # 0 /\ nextVersion # 0 => prevVersion < nextVersion
-    \/ KafkaProduce("alerts", [msg         |-> "Invariant violated",
-                               prevVersion |-> prevVersion,
-                               nextVersion |-> nextVersion])
+    \/ nextVersion # 0 => nextVersion < prevVersion
+    \/ PublishAlert([msg         |-> "Invariant violated",
+                     prevVersion |-> prevVersion,
+                     nextVersion |-> nextVersion])
 ```
 
 With the initial state predicate, the next state relation, and the type invariants,
@@ -170,7 +172,9 @@ a complete conformance monitoring spec can be compiled:
 
 EXTENDS Naturals, Sequences
 
-INSTANCE KafkaUtils
+INSTANCE Traces
+
+INSTANCE Alerts
 
 \* The previous trace version
 VARIABLE prevVersion
@@ -183,14 +187,14 @@ vars == <<prevVersion, nextVersion>>
 
 \* An invariant verifying that the trace version is monotonically increasing
 TypeOK ==
-    \/ prevVersion # 0 /\ nextVersion # 0 => prevVersion < nextVersion
-    \/ KafkaProduce("alerts", [msg         |-> "Invariant violated",
-                               prevVersion |-> prevVersion,
-                               nextVersion |-> nextVersion])
+    \/ nextVersion # 0 => nextVersion < prevVersion
+    \/ PublishAlert([msg         |-> "Invariant violated",
+                     prevVersion |-> prevVersion,
+                     nextVersion |-> nextVersion])
 
-\* Read a trace record from the Kafka stream and update the previous and next versions
+\* Read a trace record from the traces stream and update the previous and next versions
 Read ==
-    LET record == KafkaConsume("traces")
+    LET record == NextTrace
     IN
        /\ PrintT(record)
        /\ prevVersion' = nextVersion
@@ -220,7 +224,7 @@ $ helm install my-monitor --set modules={MonotonicTrace.tla} --set model=Monoton
 ```
 
 The model will be initialized with the `prevVersion` and `nextVersion` set to `0`.
-As traces are pushed onto the Kafka stream, the model checker will `Read` the trace
+As traces are pushed onto the traces stream, the model checker will `Read` the trace
 records, update the model state, and evaluate the invariant `TypeOK`.
 
 [TLA+]: https://lamport.azurewebsites.net/tla/tla.html

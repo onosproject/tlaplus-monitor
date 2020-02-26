@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.monitoring;
+package tlc2.overrides.source;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -31,12 +31,12 @@ import java.util.Properties;
 /**
  * Consumes values from a Kafka topic.
  */
-public class KafkaConsumer implements Consumer {
+public class KafkaSource implements Source {
     private final org.apache.kafka.clients.consumer.Consumer<String, String> consumer;
     private Iterator<ConsumerRecord<String, String>> records;
     private ObjectMapper mapper = new ObjectMapper();
 
-    public KafkaConsumer(String host, int port, String topic) throws IOException {
+    public KafkaSource(String host, int port, String topic) throws IOException {
         this.consumer = getConsumer(host, port, topic);
     }
 
@@ -54,8 +54,7 @@ public class KafkaConsumer implements Consumer {
         Properties config = new Properties();
         config.setProperty("bootstrap.servers", String.format("%s:%d", host, port));
         config.setProperty("client.id", InetAddress.getLocalHost().getHostName());
-        config.setProperty("enable.auto.commit", "true");
-        config.setProperty("auto.commit.interval.ms", "1000");
+        config.setProperty("group.id", InetAddress.getLocalHost().getHostName());
         config.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         config.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         config.setProperty("client.dns.lookup", "use_all_dns_ips");

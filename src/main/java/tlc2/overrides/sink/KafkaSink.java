@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.monitoring;
+package tlc2.overrides.sink;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 import tlc2.overrides.JsonUtils;
@@ -26,11 +26,11 @@ import java.util.Properties;
 /**
  * Produces values to a Kafka topic.
  */
-public class KafkaProducer implements Producer {
+public class KafkaSink implements Sink {
     private final org.apache.kafka.clients.producer.Producer<String, String> producer;
     private final String topic;
 
-    public KafkaProducer(String host, int port, String topic) throws IOException {
+    public KafkaSink(String host, int port, String topic) throws IOException {
         this.producer = getProducer(host, port);
         this.topic = topic;
     }
