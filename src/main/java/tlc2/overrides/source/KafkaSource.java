@@ -55,6 +55,8 @@ public class KafkaSource implements Source {
         config.setProperty("bootstrap.servers", String.format("%s:%d", host, port));
         config.setProperty("client.id", InetAddress.getLocalHost().getHostName());
         config.setProperty("group.id", InetAddress.getLocalHost().getHostName());
+        config.setProperty("enable.auto.commit", "false");
+        config.setProperty("auto.offset.reset", "earliest");
         config.setProperty("key.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         config.setProperty("value.deserializer", "org.apache.kafka.common.serialization.StringDeserializer");
         config.setProperty("client.dns.lookup", "use_all_dns_ips");
