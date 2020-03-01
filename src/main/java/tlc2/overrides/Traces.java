@@ -15,23 +15,31 @@
  */
 package tlc2.overrides;
 
+import tlc2.overrides.source.Consumer;
 import tlc2.overrides.source.KafkaSource;
+import tlc2.overrides.source.Partition;
 import tlc2.overrides.source.Source;
+import tlc2.value.impl.BoolValue;
 import tlc2.value.impl.Value;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Trace utilities.
  */
 public class Traces {
     private static final String TRACES_SOURCE = "TRACES_SOURCE";
-
     private static final Source SOURCE;
+    private static final List<Partition> PARTITIONS = new CopyOnWriteArrayList<>();
+    private static final AtomicInteger PARTITION_INDEX = new AtomicInteger();
+    private static final ThreadLocal<Consumer> CONSUMER = new ThreadLocal<>();
 
-    static {
+    private static Source getSource() {
         String consumerInfo = System.getenv(TRACES_SOURCE);
         if (consumerInfo != null) {
             try {
@@ -42,24 +50,73 @@ public class Traces {
                         if (path.equals("")) {
                             throw new IllegalStateException("No topic specified");
                         }
-                        SOURCE = new KafkaSource(consumerUri.getHost(), consumerUri.getPort(), path);
-                        break;
+                        return new KafkaSource(consumerUri.getHost(), consumerUri.getPort(), path);
                     default:
                         throw new IllegalStateException("Unknown consumer scheme");
                 }
             } catch (URISyntaxException | IOException e) {
                 throw new IllegalStateException(e);
             }
-        } else {
-            SOURCE = null;
+        }
+        return null;
+    }
+
+    static {
+        SOURCE = getSource();
+        if (SOURCE != null) {
+            PARTITIONS.addAll(SOURCE.getPartitions());
         }
     }
 
-    @TLAPlusOperator(identifier = "NextTrace", module = "Traces")
-    public static synchronized Value nextTrace() throws IOException {
+    @TLAPlusOperator(identifier = "BeginWindow", module = "Traces")
+    public static Value beginWindow() throws IOException {
         if (SOURCE == null) {
             throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
         }
-        return (Value) SOURCE.consume();
+
+        // If a consumer is already defined for this thread, the window is already open.
+        Consumer consumer = CONSUMER.get();
+        if (consumer != null) {
+            return BoolValue.ValFalse;
+        }
+
+        // Select a partition and get the next window for this thread.
+        int partitionIndex = PARTITION_INDEX.incrementAndGet();
+        Partition partition = PARTITIONS.get(partitionIndex % PARTITIONS.size());
+        consumer = partition.getConsumer();
+        CONSUMER.set(consumer);
+        return BoolValue.ValTrue;
+    }
+
+    @TLAPlusOperator(identifier = "NextWindow", module = "Traces")
+    public static Value nextWindow() throws IOException {
+        if (SOURCE == null) {
+            throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
+        }
+
+        // Get the consumer for this thread.
+        Consumer consumer = CONSUMER.get();
+        if (consumer == null) {
+            throw new IllegalStateException("Not in a window");
+        }
+        return (Value) consumer.next();
+    }
+
+    @TLAPlusOperator(identifier = "EndWindow", module = "Traces")
+    public static Value endWindow() throws IOException {
+        if (SOURCE == null) {
+            throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
+        }
+
+        // Get the consumer for this thread.
+        Consumer consumer = CONSUMER.get();
+        if (consumer == null) {
+            return BoolValue.ValFalse;
+        }
+
+        // Close the consumer and unset the thread local.
+        consumer.close();
+        CONSUMER.set(null);
+        return BoolValue.ValTrue;
     }
 }

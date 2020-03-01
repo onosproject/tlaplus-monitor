@@ -15,17 +15,24 @@
  */
 package tlc2.overrides.source;
 
-import java.util.Collection;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Consumer is a monitoring consumer.
+ * Consumes values from a Kafka partition.
  */
-public interface Source {
+public class KafkaPartition implements Partition {
+    private final KafkaConsumerPool pool;
+    private final AtomicLong offset = new AtomicLong();
 
-    /**
-     * Returns the partitions for the source.
-     *
-     * @return the partitions for the source
-     */
-    Collection<Partition> getPartitions();
+    KafkaPartition(String host, int port, String topic, int partition) {
+        this.pool = new KafkaConsumerPool(host, port, topic, partition);
+    }
+
+    @Override
+    public synchronized Consumer getConsumer() throws IOException {
+        KafkaConsumer consumer = pool.acquire();
+        consumer.reset(offset.incrementAndGet());
+        return consumer;
+    }
 }

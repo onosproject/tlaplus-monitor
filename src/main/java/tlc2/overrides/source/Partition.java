@@ -15,17 +15,16 @@
  */
 package tlc2.overrides.source;
 
-import java.util.Collection;
+import java.io.IOException;
 
 /**
- * Consumer is a monitoring consumer.
+ * Source partition.
  */
-public interface Source {
-
+public interface Partition {
     /**
-     * Returns the partitions for the source.
+     * Returns a consumer starting at the next offset.
      *
-     * @return the partitions for the source
+     * @return the consumer
      */
-    Collection<Partition> getPartitions();
+    Consumer getConsumer() throws IOException;
 }

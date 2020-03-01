@@ -15,42 +15,28 @@
  */
 package tlc2.overrides.source;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import tlc2.overrides.JsonUtils;
-import tlc2.value.IValue;
+import org.apache.kafka.common.PartitionInfo;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.time.Duration;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * Consumes values from a Kafka topic.
  */
 public class KafkaSource implements Source {
-    private final org.apache.kafka.clients.consumer.Consumer<String, String> consumer;
-    private Iterator<ConsumerRecord<String, String>> records;
-    private ObjectMapper mapper = new ObjectMapper();
+    private final Collection<Partition> partitions;
 
     public KafkaSource(String host, int port, String topic) throws IOException {
-        this.consumer = getConsumer(host, port, topic);
+        this.partitions = getPartitions(host, port, topic);
     }
 
     @Override
-    public IValue consume() throws IOException {
-        if (records == null || !records.hasNext()) {
-            records = consumer.poll(Duration.ofMillis(Long.MAX_VALUE)).iterator();
-        }
-        ConsumerRecord<String, String> record = records.next();
-        JsonNode node = mapper.readTree(record.value());
-        return JsonUtils.getValue(node);
+    public Collection<Partition> getPartitions() {
+        return partitions;
     }
 
-    private static org.apache.kafka.clients.consumer.Consumer<String, String> getConsumer(String host, int port, String topic) throws IOException {
+    private static Collection<Partition> getPartitions(String host, int port, String topic) throws IOException {
         Properties config = new Properties();
         config.setProperty("bootstrap.servers", String.format("%s:%d", host, port));
         config.setProperty("client.id", InetAddress.getLocalHost().getHostName());
@@ -62,6 +48,11 @@ public class KafkaSource implements Source {
         config.setProperty("client.dns.lookup", "use_all_dns_ips");
         org.apache.kafka.clients.consumer.Consumer<String, String> consumer = new org.apache.kafka.clients.consumer.KafkaConsumer<>(config);
         consumer.subscribe(Collections.singleton(topic));
-        return consumer;
+        List<PartitionInfo> partitionsInfo = consumer.partitionsFor(topic);
+        List<Partition> partitions = new ArrayList<>(partitionsInfo.size());
+        for (PartitionInfo partitionInfo : partitionsInfo) {
+            partitions.add(new KafkaPartition(host, port, topic, partitionInfo.partition()));
+        }
+        return partitions;
     }
 }
