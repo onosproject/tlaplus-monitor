@@ -24,6 +24,13 @@ import java.io.IOException;
  */
 public interface Consumer {
     /**
+     * Returns the consumer offset.
+     *
+     * @return the consumer offset
+     */
+    long offset();
+
+    /**
      * Consumes the next value.
      *
      * @return the consumed value

@@ -35,6 +35,7 @@ import java.util.Properties;
 public class KafkaConsumer implements Consumer {
     private final String topic;
     private final int partition;
+    private long offset;
     private final KafkaConsumerPool pool;
     private final org.apache.kafka.clients.consumer.Consumer<String, String> consumer;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -47,6 +48,11 @@ public class KafkaConsumer implements Consumer {
         this.consumer = getConsumer(host, port, topic, partition);
     }
 
+    @Override
+    public long offset() {
+        return offset;
+    }
+
     /**
      * Resets the consumer to the given offset.
      *
@@ -54,6 +60,7 @@ public class KafkaConsumer implements Consumer {
      */
     public void reset(long offset) {
         consumer.seek(new TopicPartition(topic, partition), offset);
+        this.offset = offset;
         records = null;
     }
 

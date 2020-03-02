@@ -82,8 +82,7 @@ public class Traces {
 
         // Select a partition and get the next window for this thread.
         int partitionIndex = PARTITION_INDEX.incrementAndGet();
-        Partition partition = PARTITIONS.get(partitionIndex % PARTITIONS.size());
-        consumer = partition.getConsumer();
+        consumer = PARTITIONS.get(partitionIndex % PARTITIONS.size()).getConsumer();
         CONSUMER.set(consumer);
         return BoolValue.ValTrue;
     }
