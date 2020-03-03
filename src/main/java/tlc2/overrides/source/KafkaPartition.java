@@ -42,6 +42,11 @@ public class KafkaPartition implements Partition {
     }
 
     @Override
+    public int id() {
+        return partition.partition();
+    }
+
+    @Override
     public long offset(long timestamp) throws IOException {
         long endOffset = consumer.endOffsets(Collections.singleton(partition)).get(partition);
         Record record = get(endOffset);

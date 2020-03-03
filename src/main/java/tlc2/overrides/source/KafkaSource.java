@@ -20,20 +20,26 @@ import org.apache.kafka.common.PartitionInfo;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Consumes values from a Kafka topic.
  */
 public class KafkaSource implements Source {
-    private final Collection<Partition> partitions;
+    private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
 
     public KafkaSource(String host, int port, String topic) throws IOException {
-        this.partitions = getPartitions(host, port, topic);
+        getPartitions(host, port, topic).forEach(partition -> partitions.put(partition.id(), partition));
+    }
+
+    @Override
+    public Partition getPartition(int partition) {
+        return partitions.get(partition);
     }
 
     @Override
     public Collection<Partition> getPartitions() {
-        return partitions;
+        return partitions.values();
     }
 
     private static Collection<Partition> getPartitions(String host, int port, String topic) throws IOException {

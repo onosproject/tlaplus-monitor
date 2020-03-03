@@ -23,6 +23,14 @@ import java.util.Collection;
 public interface Source {
 
     /**
+     * Returns a partition by ID.
+     *
+     * @param partition the partition ID
+     * @return the partition
+     */
+    Partition getPartition(int partition);
+
+    /**
      * Returns the partitions for the source.
      *
      * @return the partitions for the source

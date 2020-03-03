@@ -23,6 +23,13 @@ import java.io.IOException;
 public interface Partition {
 
     /**
+     * Returns the partition identifier.
+     *
+     * @return the partition identifier
+     */
+    int id();
+
+    /**
      * Returns the position of the first offset exceeding the given timestamp.
      *
      * @param timestamp the timestamp for which to search
