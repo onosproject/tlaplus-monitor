@@ -15,32 +15,39 @@
  */
 package tlc2.overrides;
 
-import tlc2.overrides.source.Consumer;
+import tlc2.output.EC;
+import tlc2.output.MP;
 import tlc2.overrides.source.KafkaSource;
 import tlc2.overrides.source.Partition;
+import tlc2.overrides.source.Record;
 import tlc2.overrides.source.Source;
-import tlc2.value.impl.BoolValue;
+import tlc2.value.impl.IntValue;
 import tlc2.value.impl.Value;
 
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Queue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Trace utilities.
  */
 public class Traces {
-    private static final String TRACES_SOURCE = "TRACES_SOURCE";
+    private static final String TRACE_SOURCE = "TRACE_SOURCE";
+    private static final String TRACE_START_TIMESTAMP = "TRACE_START_TIMESTAMP";
+    private static final String TRACE_END_TIMESTAMP = "TRACE_END_TIMESTAMP";
     private static final Source SOURCE;
-    private static final List<Partition> PARTITIONS = new CopyOnWriteArrayList<>();
-    private static final AtomicInteger PARTITION_INDEX = new AtomicInteger();
-    private static final ThreadLocal<Consumer> CONSUMER = new ThreadLocal<>();
+    private static final Queue<Partition> PARTITIONS = new LinkedBlockingQueue<>();
+
+    private static final Long START_TIME;
+    private static final Long END_TIME;
+
+    private static final ThreadLocal<Partition> PARTITION = new ThreadLocal<>();
+    private static final ThreadLocal<Long> UPPER_BOUND = new ThreadLocal<>();
 
     private static Source getSource() {
-        String consumerInfo = System.getenv(TRACES_SOURCE);
+        String consumerInfo = System.getenv(TRACE_SOURCE);
         if (consumerInfo != null) {
             try {
                 URI consumerUri = new URI(consumerInfo);
@@ -64,58 +71,113 @@ public class Traces {
     static {
         SOURCE = getSource();
         if (SOURCE != null) {
-            PARTITIONS.addAll(SOURCE.getPartitions());
+            synchronized (PARTITIONS) {
+                PARTITIONS.addAll(SOURCE.getPartitions());
+            }
         }
     }
 
-    @TLAPlusOperator(identifier = "BeginWindow", module = "Traces")
-    public static Value beginWindow() throws IOException {
+    static {
+        String startTime = System.getenv(TRACE_START_TIMESTAMP);
+        if (startTime != null) {
+            START_TIME = Long.parseLong(startTime);
+        } else {
+            START_TIME = null;
+        }
+        String endTime = System.getenv(TRACE_END_TIMESTAMP);
+        if (endTime != null) {
+            END_TIME = Long.parseLong(endTime);
+        } else {
+            END_TIME = null;
+        }
+    }
+
+    private static Partition getPartition() {
+        Partition partition;
+        synchronized (PARTITION) {
+            partition = PARTITION.get();
+            if (partition == null) {
+                partition = PARTITIONS.remove();
+                PARTITION.set(partition);
+            }
+        }
+        return partition;
+    }
+
+    @TLAPlusOperator(identifier = "LowerBound", module = "Traces")
+    public static Value lowerBound() throws IOException {
         if (SOURCE == null) {
             throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
         }
 
-        // If a consumer is already defined for this thread, the window is already open.
-        Consumer consumer = CONSUMER.get();
-        if (consumer != null) {
-            return BoolValue.ValFalse;
+        MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "start lowerBound");
+        // If the start time is not set, return an infinite lower bound.
+        if (START_TIME == null) {
+            MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "end lowerBound");
+            return IntValue.gen(0);
         }
 
-        // Select a partition and get the next window for this thread.
-        int partitionIndex = PARTITION_INDEX.incrementAndGet();
-        consumer = PARTITIONS.get(partitionIndex % PARTITIONS.size()).getConsumer();
-        CONSUMER.set(consumer);
-        return BoolValue.ValTrue;
+        // Get the thread partition or set it if not already set
+        Partition partition = getPartition();
+
+        // Get the first offset following the configured start time.
+        long startOffset = partition.offset(START_TIME);
+        MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "end lowerBound");
+        return IntValue.gen((int) startOffset);
     }
 
-    @TLAPlusOperator(identifier = "NextWindow", module = "Traces")
-    public static Value nextWindow() throws IOException {
+    @TLAPlusOperator(identifier = "UpperBound", module = "Traces")
+    public static Value upperBound() throws IOException {
         if (SOURCE == null) {
             throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
         }
 
-        // Get the consumer for this thread.
-        Consumer consumer = CONSUMER.get();
-        if (consumer == null) {
-            throw new IllegalStateException("Not in a window");
+        MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "start upperBound");
+        // If the end time is not set, return an infinite upper bound.
+        if (END_TIME == null) {
+            MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "end upperBound");
+            return IntValue.gen(Integer.MAX_VALUE);
         }
-        return (Value) consumer.next();
+
+        // Get the thread partition or set it if not already set
+        Partition partition = getPartition();
+
+        // Get the upper bound.
+        Long offset = UPPER_BOUND.get();
+
+        // If the upper bound is not set, get the upper bound from the partition.
+        if (offset == null) {
+            long endOffset = partition.offset(END_TIME);
+            UPPER_BOUND.set(endOffset);
+            MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "end upperBound");
+            return IntValue.gen((int) endOffset);
+        }
+
+        // Get the next offset and return the offset if it exceeds the upper bound timestamp, otherwise
+        // return the offset + 1.
+        Record record = partition.get(offset);
+        if (record.timestamp() >= END_TIME) {
+            MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "end upperBound");
+            return IntValue.gen((int) (long) offset);
+        }
+        MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "end upperBound");
+        return IntValue.gen((int) (long) offset + 1);
     }
 
-    @TLAPlusOperator(identifier = "EndWindow", module = "Traces")
-    public static Value endWindow() throws IOException {
+    @TLAPlusOperator(identifier = "Trace", module = "Traces")
+    public static Value trace(IntValue offset) throws IOException {
         if (SOURCE == null) {
             throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
         }
 
-        // Get the consumer for this thread.
-        Consumer consumer = CONSUMER.get();
-        if (consumer == null) {
-            return BoolValue.ValFalse;
-        }
+        MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "start trace " + offset.val);
+        // Get the thread partition or set it if not already set
+        Partition partition = getPartition();
 
-        // Close the consumer and unset the thread local.
-        consumer.close();
-        CONSUMER.set(null);
-        return BoolValue.ValTrue;
+        // Get the next record and set the upper bound
+        UPPER_BOUND.set((long) offset.val + 1);
+        Value value = partition.get(offset.val).value();
+        MP.printMessage(EC.TLC_MODULE_OVERRIDE_STDOUT, "end trace");
+        return value;
     }
 }

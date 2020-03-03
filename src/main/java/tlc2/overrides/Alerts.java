@@ -28,12 +28,12 @@ import java.net.URISyntaxException;
  * Alert utilities.
  */
 public class Alerts {
-    private static final String ALERTS_SINK = "ALERTS_SINK";
+    private static final String ALERT_SINK = "ALERT_SINK";
 
     private static final Sink SINK;
 
     static {
-        String producerInfo = System.getenv(ALERTS_SINK);
+        String producerInfo = System.getenv(ALERT_SINK);
         if (producerInfo != null) {
             try {
                 URI producerUri = new URI(producerInfo);

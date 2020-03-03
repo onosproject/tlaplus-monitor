@@ -6,10 +6,10 @@ LOCAL INSTANCE Integers
   (* Imports the definitions from the modules, but doesn't export them.    *)
   (*************************************************************************)
 
-BeginWindow == CHOOSE val : TRUE
+LowerBound == 0
 
-NextWindow == CHOOSE val : TRUE
+UpperBound == 0
 
-EndWindow == CHOOSE val : TRUE
+Trace(offset) == CHOOSE val : TRUE
 
 ============================================================================

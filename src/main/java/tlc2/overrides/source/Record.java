@@ -16,29 +16,46 @@
 package tlc2.overrides.source;
 
 import tlc2.value.IValue;
-
-import java.io.IOException;
+import tlc2.value.impl.Value;
 
 /**
- * Source consumer.
+ * Consumer record.
  */
-public interface Consumer {
-    /**
-     * Returns the consumer offset.
-     *
-     * @return the consumer offset
-     */
-    long offset();
+public class Record {
+    private final long offset;
+    private final IValue value;
+    private final long timestamp;
+
+    public Record(long offset, IValue value, long timestamp) {
+        this.offset = offset;
+        this.value = value;
+        this.timestamp = timestamp;
+    }
 
     /**
-     * Consumes the next value.
+     * Returns the record offset.
      *
-     * @return the consumed value
+     * @return the record offset
      */
-    IValue next() throws IOException;
+    public final long offset() {
+        return offset;
+    }
 
     /**
-     * Closes the consumer.
+     * Returns the record value.
+     *
+     * @return the record value
      */
-    void close();
+    public final Value value() {
+        return (Value) value;
+    }
+
+    /**
+     * Returns the record timestamp.
+     *
+     * @return the record timestamp
+     */
+    public final long timestamp() {
+        return timestamp;
+    }
 }

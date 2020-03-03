@@ -21,10 +21,21 @@ import java.io.IOException;
  * Source partition.
  */
 public interface Partition {
+
     /**
-     * Returns a consumer starting at the next offset.
+     * Returns the position of the first offset exceeding the given timestamp.
      *
-     * @return the consumer
+     * @param timestamp the timestamp for which to search
+     * @return the first offset exceeding the given timestamp
      */
-    Consumer getConsumer() throws IOException;
+    long offset(long timestamp) throws IOException;
+
+    /**
+     * Gets the given offset.
+     *
+     * @param offset the offset to get
+     * @return the record
+     * @throws IOException if the get fails
+     */
+    Record get(long offset) throws IOException;
 }
