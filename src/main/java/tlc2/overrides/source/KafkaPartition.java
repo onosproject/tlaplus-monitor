@@ -15,7 +15,6 @@
  */
 package tlc2.overrides.source;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -26,6 +25,7 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Consumes values from a Kafka partition.
@@ -34,7 +34,7 @@ public class KafkaPartition implements Partition {
     private final TopicPartition partition;
     private final Consumer<String, String> consumer;
     private final ObjectMapper mapper = new ObjectMapper();
-    private volatile Iterator<ConsumerRecord<String, String>> records;
+    private final Map<Long, Record> records = new ConcurrentHashMap<>();
 
     KafkaPartition(String host, int port, String topic, int partition) throws IOException {
         this.partition = new TopicPartition(topic, partition);
@@ -61,16 +61,17 @@ public class KafkaPartition implements Partition {
 
     @Override
     public Record get(long offset) throws IOException {
-        if (records == null || !records.hasNext()) {
-            records = consumer.poll(Duration.ofMillis(Long.MAX_VALUE)).iterator();
-        }
-        ConsumerRecord<String, String> record = records.next();
-        if (record.offset() != offset) {
+        Record record = records.get(offset);
+        if (record == null) {
             consumer.seek(partition, offset);
-            records = consumer.poll(Duration.ofMillis(Long.MAX_VALUE)).iterator();
+            Iterator<ConsumerRecord<String, String>> iterator = consumer.poll(Duration.ofMillis(Long.MAX_VALUE)).iterator();
+            while (iterator.hasNext()) {
+                ConsumerRecord<String, String> consumerRecord = iterator.next();
+                records.put(consumerRecord.offset(), new Record(consumerRecord.offset(), JsonUtils.getValue(mapper.readTree(consumerRecord.value())), consumerRecord.timestamp()));
+            }
+            record = records.get(offset);
         }
-        JsonNode node = mapper.readTree(record.value());
-        return new Record(record.offset(), JsonUtils.getValue(node), record.timestamp());
+        return record;
     }
 
     private static Consumer<String, String> getConsumer(String host, int port, String topic, int partition) throws IOException {

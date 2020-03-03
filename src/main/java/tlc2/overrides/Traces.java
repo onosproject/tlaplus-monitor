@@ -15,8 +15,6 @@
  */
 package tlc2.overrides;
 
-import tlc2.output.EC;
-import tlc2.output.MP;
 import tlc2.overrides.source.Partition;
 import tlc2.overrides.source.Record;
 import tlc2.overrides.source.Source;
