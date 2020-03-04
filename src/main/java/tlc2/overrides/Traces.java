@@ -86,7 +86,10 @@ public class Traces {
 
         // Get the first offset following the configured start time.
         long startOffset = PARTITION.offset(START_TIME);
-        return IntValue.gen((int) startOffset);
+        if (startOffset == 0) {
+            return IntValue.gen(0);
+        }
+        return IntValue.gen((int) startOffset - 1);
     }
 
     @TLAPlusOperator(identifier = "UpperBound", module = "Traces")
@@ -106,7 +109,11 @@ public class Traces {
         // If the upper bound is not set, get the upper bound from the partition.
         if (upperBound() == null) {
             long endOffset = PARTITION.offset(END_TIME);
-            upperBound = endOffset;
+            if (endOffset == 0) {
+                upperBound = 1L;
+            } else {
+                upperBound = endOffset;
+            }
             return IntValue.gen((int) endOffset);
         }
 

@@ -18,6 +18,7 @@ package tlc2.overrides.source;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.TopicPartition;
 import tlc2.overrides.JsonUtils;
 
@@ -48,7 +49,11 @@ public class KafkaPartition implements Partition {
 
     @Override
     public long offset(long timestamp) throws IOException {
-        long endOffset = consumer.endOffsets(Collections.singleton(partition)).get(partition);
+        long endOffset = consumer.endOffsets(Collections.singleton(partition)).get(partition) - 1;
+        if (endOffset == -1) {
+            return 0;
+        }
+
         Record record = get(endOffset);
         if (record.timestamp() < timestamp) {
             return record.offset();
@@ -56,20 +61,21 @@ public class KafkaPartition implements Partition {
 
         Map<TopicPartition, Long> times = new HashMap<>();
         times.put(partition, timestamp);
-        return consumer.offsetsForTimes(times).get(partition).offset();
+        endOffset = consumer.offsetsForTimes(times).get(partition).offset();
+        return endOffset;
     }
 
     @Override
     public Record get(long offset) throws IOException {
         Record record = records.get(offset);
         if (record == null) {
+            records.clear();
             consumer.seek(partition, offset);
-            Iterator<ConsumerRecord<String, String>> iterator = consumer.poll(Duration.ofMillis(Long.MAX_VALUE)).iterator();
-            while (iterator.hasNext()) {
-                ConsumerRecord<String, String> consumerRecord = iterator.next();
-                records.put(consumerRecord.offset(), new Record(consumerRecord.offset(), JsonUtils.getValue(mapper.readTree(consumerRecord.value())), consumerRecord.timestamp()));
+            ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(Long.MAX_VALUE));
+            for (ConsumerRecord<String, String> r : records) {
+                this.records.put(r.offset(), new Record(r.offset(), JsonUtils.getValue(mapper.readTree(r.value())), r.timestamp()));
             }
-            record = records.get(offset);
+            record = this.records.get(offset);
         }
         return record;
     }

@@ -56,7 +56,7 @@ public class Alerts {
         }
     }
 
-    @TLAPlusOperator(identifier = "PublishAlert", module = "Alerts")
+    @TLAPlusOperator(identifier = "Alert", module = "Alerts")
     public static synchronized IValue publishAlert(IValue value) throws IOException {
         if (SINK == null) {
             throw new IllegalStateException("No producer configured. Is TLC running in monitor mode?");
