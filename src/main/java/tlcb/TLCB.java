@@ -93,17 +93,12 @@ public class TLCB {
     private long getStartTime(Source source) throws IOException {
         long startTime = System.currentTimeMillis();
         for (Partition partition : source.getPartitions()) {
-            System.out.println("offset");
             long firstOffset = partition.offset(0);
-            System.out.println("offset " + firstOffset);
             if (firstOffset != 0) {
-                System.out.println("get");
                 Record firstRecord = partition.get(firstOffset);
-                System.out.println("get " + firstOffset);
                 startTime = Math.min(startTime, firstRecord.timestamp());
             }
         }
-        System.out.println("startTime: " + startTime);
         return startTime;
     }
 
@@ -111,7 +106,6 @@ public class TLCB {
      * Runs the given window.
      */
     private void runWindow(Source source, long startTime) throws Exception {
-        System.out.println("runWindow: " + startTime);
         List<TLCRunner> runners = new ArrayList<>(source.getPartitions().size());
         for (Partition partition : source.getPartitions()) {
             TLCRunner runner = new TLCRunner();
