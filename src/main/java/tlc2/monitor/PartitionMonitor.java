@@ -40,15 +40,13 @@ final class PartitionMonitor {
     private final Partition partition;
     private final Source source;
     private final Sink sink;
-    private final long window;
-    private final List<String> args;
+    private final TLCMonitorConfig config;
 
-    PartitionMonitor(Partition partition, Source source, Sink sink, long window, List<String> args) {
+    PartitionMonitor(Partition partition, Source source, Sink sink, TLCMonitorConfig config) {
         this.partition = partition;
         this.source = source;
         this.sink = sink;
-        this.window = window;
-        this.args = args;
+        this.config = config;
     }
 
     /**
@@ -63,7 +61,7 @@ final class PartitionMonitor {
         long time = replayPartition(partition);
         for (; ; ) {
             final long windowStartTime = time;
-            final long windowEndTime = time + window;
+            final long windowEndTime = time + config.getWindow();
             new Thread(() -> {
                 try {
                     runWindow(partition, windowStartTime, windowEndTime);
@@ -71,8 +69,8 @@ final class PartitionMonitor {
                     e.printStackTrace();
                 }
             }).start();
-            time += window / 2;
-            Thread.sleep(window / 2);
+            time += config.getWindow() / 2;
+            Thread.sleep(config.getWindow() / 2);
         }
     }
 
@@ -83,21 +81,21 @@ final class PartitionMonitor {
      * @return the time (in milliseconds) up to which traces were checked
      */
     private long replayPartition(Partition partition) throws Exception {
-        long firstOffset = partition.offset(0);
+        long firstOffset = partition.indexOf(0);
         long time = System.currentTimeMillis();
         if (firstOffset != 0) {
             Record firstRecord = partition.get(firstOffset);
             long startTime = firstRecord.timestamp();
-            long lastOffset = partition.offset(Long.MAX_VALUE);
+            long lastOffset = partition.indexOf(Long.MAX_VALUE);
             Record lastRecord = partition.get(lastOffset);
             LOGGER.log("Checking existing offsets in %s from offset %d to offset %d", partition, firstOffset, lastOffset);
             long endTime = lastRecord.timestamp();
             time = startTime;
             while (time < endTime) {
                 long windowStartTime = time;
-                long windowEndTime = time + window;
+                long windowEndTime = time + config.getWindow();
                 runWindow(partition, windowStartTime, windowEndTime);
-                time += window / 2;
+                time += config.getWindow() / 2;
             }
         }
         return time;
@@ -121,9 +119,10 @@ final class PartitionMonitor {
         env.put(Traces.WINDOW_START_ENV, String.valueOf(startTime));
         env.put(Traces.WINDOW_END_ENV, String.valueOf(endTime));
         env.put(Alerts.SINK_ENV, sink.uri());
+        env.put("CLASSPATH", String.format("%s:%s", System.getProperty("java.class.path"), config.getDirectory().getAbsolutePath()));
 
         // Modify the TLC arguments to ensure the metadir is writable and TLC does not exit on invariant violations.
-        List<String> args = new ArrayList<>(this.args);
+        List<String> args = new ArrayList<>(config.getArgs());
         if (!args.contains("-metadir")) {
             args.add("-metadir");
             args.add(String.format("/opt/tlaplus/data/%d", partition.id()));
@@ -133,8 +132,6 @@ final class PartitionMonitor {
         }
 
         LOGGER.log("Starting TLC process...");
-        LOGGER.log("TLC environment: %s", env);
-        LOGGER.log("TLC arguments: %s", args);
         runner.start(args, env);
         runner.join();
     }

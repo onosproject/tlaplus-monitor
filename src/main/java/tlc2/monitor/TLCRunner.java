@@ -88,10 +88,7 @@ final class TLCRunner {
         command.addAll(args);
 
         final ProcessBuilder processBuilder = new ProcessBuilder(command);
-        final Map<String, String> environment = processBuilder.environment();
-        environment.put("CLASSPATH", System.getProperty("java.class.path"));
-        environment.putAll(env);
-
+        processBuilder.environment().putAll(env);
         return processBuilder;
     }
 

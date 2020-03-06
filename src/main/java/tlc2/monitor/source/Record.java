@@ -22,23 +22,23 @@ import tlc2.value.impl.Value;
  * Consumer record.
  */
 public class Record {
-    private final long offset;
+    private final long index;
     private final IValue value;
     private final long timestamp;
 
-    public Record(long offset, IValue value, long timestamp) {
-        this.offset = offset;
+    public Record(long index, IValue value, long timestamp) {
+        this.index = index;
         this.value = value;
         this.timestamp = timestamp;
     }
 
     /**
-     * Returns the record offset.
+     * Returns the record index.
      *
-     * @return the record offset
+     * @return the record index
      */
-    public final long offset() {
-        return offset;
+    public final long index() {
+        return index;
     }
 
     /**
@@ -57,5 +57,10 @@ public class Record {
      */
     public final long timestamp() {
         return timestamp;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Record(index=%d, value=%s, timestamp=%d)", index, value, timestamp);
     }
 }

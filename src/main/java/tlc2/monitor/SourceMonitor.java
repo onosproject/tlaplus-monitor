@@ -36,14 +36,12 @@ final class SourceMonitor {
 
     private final Source source;
     private final Sink sink;
-    private final long window;
-    private final List<String> args;
+    private final TLCMonitorConfig config;
 
-    SourceMonitor(Source source, Sink sink, long window, List<String> args) {
+    SourceMonitor(Source source, Sink sink, TLCMonitorConfig config) {
         this.source = source;
         this.sink = sink;
-        this.window = window;
-        this.args = args;
+        this.config = config;
     }
 
     /**
@@ -68,7 +66,7 @@ final class SourceMonitor {
      * @param partition the partition for which to run the monitor
      */
     private void monitor(Partition partition) {
-        PartitionMonitor checker = new PartitionMonitor(partition, source, sink, window, args);
+        PartitionMonitor checker = new PartitionMonitor(partition, source, sink, config);
         LOGGER.log("Starting partition monitor for %s partition %d", source, partition.id());
         try {
             checker.run();

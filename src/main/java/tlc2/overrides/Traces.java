@@ -15,12 +15,15 @@
  */
 package tlc2.overrides;
 
+import tlc2.TLCGlobals;
 import tlc2.monitor.source.KafkaSource;
 import tlc2.monitor.source.Partition;
 import tlc2.monitor.source.Record;
 import tlc2.monitor.source.Source;
 import tlc2.monitor.util.Logger;
 import tlc2.monitor.util.ModuleLogger;
+import tlc2.tool.ModelChecker;
+import tlc2.value.impl.BoolValue;
 import tlc2.value.impl.IntValue;
 import tlc2.value.impl.Value;
 
@@ -43,7 +46,10 @@ public class Traces {
 
     private static final Long START_TIME;
     private static final Long END_TIME;
+    private static volatile Long index;
 
+    private static Integer currentLevel;
+    private static Integer currentOffset;
     private static Long upperBound;
 
     static {
@@ -90,55 +96,82 @@ public class Traces {
         }
     }
 
-    @TLAPlusOperator(identifier = "LowerBound", module = "Traces")
-    public static Value lowerBound() throws IOException {
+    /**
+     * Returns the index for the given offset.
+     *
+     * @param offset the offset for which to return the index
+     * @return the index for the given offset
+     */
+    private static long indexOf(int offset) throws IOException {
+        return index() + offset;
+    }
+
+    /**
+     * Computes the starting trace index.
+     *
+     * @return the starting trace index
+     */
+    private static long index() throws IOException {
         assertSource();
+        if (index == null) {
+            // If the start time is not set, return an infinite lower bound.
+            if (START_TIME == null) {
+                return 0;
+            }
 
-        // If the start time is not set, return an infinite lower bound.
-        if (START_TIME == null) {
-            return IntValue.gen(0);
+            // Get the first offset following the configured start time.
+            long startIndex = PARTITION.indexOf(START_TIME);
+            if (startIndex == 0) {
+                index = 1L;
+            } else {
+                index = startIndex;
+            }
         }
+        return index;
+    }
 
-        // Get the first offset following the configured start time.
-        long startOffset = PARTITION.offset(START_TIME);
-        if (startOffset == 0) {
-            return IntValue.gen(0);
-        }
-        return IntValue.gen((int) startOffset - 1);
+    @TLAPlusOperator(identifier = "Trace", module = "Traces")
+    public static Value trace(IntValue offset) throws IOException {
+        assertSource();
+        final ModelChecker mc = (ModelChecker) TLCGlobals.mainChecker;
+        currentLevel = mc.trace.getLevel();
+        currentOffset = offset.val;
+        return PARTITION.get(indexOf(offset.val)).value();
     }
 
     @TLAPlusOperator(identifier = "UpperBound", module = "Traces")
     public static Value upperBound() throws IOException {
         assertSource();
 
+        // If the trace level has reset, unset the level and offset.
+        final ModelChecker mc = (ModelChecker) TLCGlobals.mainChecker;
+        if (mc.trace.getLevel() < currentLevel) {
+            currentLevel = 0;
+            currentOffset = 0;
+            return BoolValue.ValFalse;
+        }
+
         // If the end time is not set, return an infinite upper bound.
         if (END_TIME == null) {
-            return IntValue.gen(Integer.MAX_VALUE);
+            return BoolValue.ValFalse;
         }
 
-        // If the upper bound is not set, get the upper bound from the partition.
-        if (upperBound == null) {
-            long endOffset = PARTITION.offset(END_TIME);
-            if (endOffset == 0) {
-                upperBound = 1L;
-            } else {
-                upperBound = endOffset;
-            }
-            return IntValue.gen((int) endOffset);
+        // If the current offset is not set, return false.
+        if (currentOffset == null) {
+            return BoolValue.ValFalse;
         }
 
-        // Get the next offset and return the offset if it exceeds the upper bound timestamp, otherwise
-        // return the offset + 1.
-        Record record = PARTITION.get(upperBound + 1);
+        // If the upper bound is set, return whether the current offset is greater than the upper bound.
+        if (upperBound != null) {
+            return currentOffset >= upperBound ? BoolValue.ValTrue : BoolValue.ValFalse;
+        }
+
+        // Get the next offset and determine whether it exceeds the upper bound.
+        Record record = PARTITION.get(indexOf(currentOffset + 1));
         if (record.timestamp() >= END_TIME) {
-            return IntValue.gen((int) (long) upperBound);
+            upperBound = currentOffset + 1L;
+            return BoolValue.ValTrue;
         }
-        return IntValue.gen((int) (long) upperBound + 1);
-    }
-
-    @TLAPlusOperator(identifier = "Trace", module = "Traces")
-    public static Value trace(IntValue offset) throws IOException {
-        assertSource();
-        return PARTITION.get(offset.val).value();
+        return BoolValue.ValFalse;
     }
 }

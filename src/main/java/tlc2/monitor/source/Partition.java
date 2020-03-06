@@ -30,19 +30,19 @@ public interface Partition {
     int id();
 
     /**
-     * Returns the position of the first offset exceeding the given timestamp.
+     * Returns the index of the first offset exceeding the given timestamp.
      *
      * @param timestamp the timestamp for which to search
-     * @return the first offset exceeding the given timestamp
+     * @return the first index exceeding the given timestamp
      */
-    long offset(long timestamp) throws IOException;
+    long indexOf(long timestamp) throws IOException;
 
     /**
-     * Gets the given offset.
+     * Gets the given index.
      *
-     * @param offset the offset to get
+     * @param index the index to get
      * @return the record
      * @throws IOException if the get fails
      */
-    Record get(long offset) throws IOException;
+    Record get(long index) throws IOException;
 }

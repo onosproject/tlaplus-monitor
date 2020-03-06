@@ -51,7 +51,7 @@ public class KafkaPartition implements Partition {
     }
 
     @Override
-    public long offset(long timestamp) throws IOException {
+    public long indexOf(long timestamp) throws IOException {
         long endOffset = consumer.endOffsets(Collections.singleton(partition)).get(partition) - 1;
         if (endOffset == -1) {
             return 0;
@@ -59,7 +59,7 @@ public class KafkaPartition implements Partition {
 
         Record record = get(endOffset);
         if (record.timestamp() < timestamp) {
-            return record.offset();
+            return record.index();
         }
 
         Map<TopicPartition, Long> times = new HashMap<>();
@@ -72,16 +72,16 @@ public class KafkaPartition implements Partition {
     }
 
     @Override
-    public Record get(long offset) throws IOException {
-        Record record = records.get(offset);
+    public Record get(long index) throws IOException {
+        Record record = records.get(index);
         if (record == null) {
             records.clear();
-            consumer.seek(partition, offset);
+            consumer.seek(partition, index);
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(Long.MAX_VALUE));
             for (ConsumerRecord<String, String> r : records) {
                 this.records.put(r.offset(), new Record(r.offset(), JsonUtils.getValue(mapper.readTree(r.value())), r.timestamp()));
             }
-            record = this.records.get(offset);
+            record = this.records.get(index);
         }
         return record;
     }
