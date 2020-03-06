@@ -13,20 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.sink;
-
-import tlc2.value.IValue;
+package tlc2.monitor.source;
 
 import java.io.IOException;
 
 /**
- * Monitoring producer.
+ * Source partition.
  */
-public interface Sink {
+public interface Partition {
+
     /**
-     * Produces a value.
+     * Returns the partition identifier.
      *
-     * @param value the value to produce
+     * @return the partition identifier
      */
-    void produce(IValue value) throws IOException;
+    int id();
+
+    /**
+     * Returns the index of the first offset exceeding the given timestamp.
+     *
+     * @param timestamp the timestamp for which to search
+     * @return the first index exceeding the given timestamp
+     */
+    long indexOf(long timestamp) throws IOException;
+
+    /**
+     * Gets the given index.
+     *
+     * @param index the index to get
+     * @return the record
+     * @throws IOException if the get fails
+     */
+    Record get(long index) throws IOException;
 }

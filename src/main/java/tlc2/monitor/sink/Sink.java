@@ -13,20 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.source;
+package tlc2.monitor.sink;
 
 import tlc2.value.IValue;
 
 import java.io.IOException;
 
 /**
- * Consumer is a monitoring consumer.
+ * Monitoring sink.
  */
-public interface Source {
+public interface Sink {
+
     /**
-     * Consumes a value.
+     * Returns the sink URI.
      *
-     * @return the consumed value
+     * @return the sink URI
      */
-    IValue consume() throws IOException;
+    String uri();
+
+    /**
+     * Produces a value.
+     *
+     * @param value the value to produce
+     */
+    void produce(IValue value) throws IOException;
 }
