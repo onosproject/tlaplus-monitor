@@ -13,27 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.source;
+package tlc2.monitor.source;
 
-import java.util.Collection;
+import java.io.IOException;
 
 /**
- * Consumer is a monitoring consumer.
+ * Source partition.
  */
-public interface Source {
+public interface Partition {
 
     /**
-     * Returns a partition by ID.
+     * Returns the partition identifier.
      *
-     * @param partition the partition ID
-     * @return the partition
+     * @return the partition identifier
      */
-    Partition getPartition(int partition);
+    int id();
 
     /**
-     * Returns the partitions for the source.
+     * Returns the position of the first offset exceeding the given timestamp.
      *
-     * @return the partitions for the source
+     * @param timestamp the timestamp for which to search
+     * @return the first offset exceeding the given timestamp
      */
-    Collection<Partition> getPartitions();
+    long offset(long timestamp) throws IOException;
+
+    /**
+     * Gets the given offset.
+     *
+     * @param offset the offset to get
+     * @return the record
+     * @throws IOException if the get fails
+     */
+    Record get(long offset) throws IOException;
 }

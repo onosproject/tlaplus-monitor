@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.sink;
+package tlc2.monitor.sink;
 
 import org.apache.kafka.clients.producer.ProducerRecord;
 import tlc2.overrides.JsonUtils;
@@ -21,18 +21,38 @@ import tlc2.value.IValue;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Properties;
 
 /**
  * Produces values to a Kafka topic.
  */
 public class KafkaSink implements Sink {
+    private static final String SCHEME = "kafka";
+
+    private final String uri;
     private final org.apache.kafka.clients.producer.Producer<String, String> producer;
     private final String topic;
 
-    public KafkaSink(String host, int port, String topic) throws IOException {
-        this.producer = getProducer(host, port);
+    public KafkaSink(String uri) throws URISyntaxException, IOException {
+        this.uri = uri;
+
+        URI source = new URI(uri);
+        if (!source.getScheme().equals(SCHEME)) {
+            throw new IllegalStateException("Unknown sink scheme " + source.getScheme());
+        }
+        String topic = source.getPath().substring(1);
+        if (topic.equals("")) {
+            throw new IllegalStateException("No topic specified");
+        }
+        this.producer = getProducer(source.getHost(), source.getPort());
         this.topic = topic;
+    }
+
+    @Override
+    public String uri() {
+        return uri;
     }
 
     @Override
@@ -49,5 +69,10 @@ public class KafkaSink implements Sink {
         config.setProperty("client.dns.lookup", "use_all_dns_ips");
         config.setProperty("acks", "all");
         return new org.apache.kafka.clients.producer.KafkaProducer<>(config);
+    }
+
+    @Override
+    public String toString() {
+        return uri;
     }
 }

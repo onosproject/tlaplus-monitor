@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.source;
+package tlc2.monitor.source;
 
 import org.apache.kafka.common.PartitionInfo;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,10 +28,29 @@ import java.util.concurrent.ConcurrentHashMap;
  * Consumes values from a Kafka topic.
  */
 public class KafkaSource implements Source {
+    private static final String SCHEME = "kafka";
+
+    private final String uri;
     private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
 
-    public KafkaSource(String host, int port, String topic) throws IOException {
-        getPartitions(host, port, topic).forEach(partition -> partitions.put(partition.id(), partition));
+    public KafkaSource(String uri) throws URISyntaxException, IOException {
+        this.uri = uri;
+
+        URI source = new URI(uri);
+        if (!source.getScheme().equals(SCHEME)) {
+            throw new IllegalStateException("Unknown source scheme " + source.getScheme());
+        }
+        String topic = source.getPath().substring(1);
+        if (topic.equals("")) {
+            throw new IllegalStateException("No topic specified");
+        }
+        getPartitions(source.getHost(), source.getPort(), topic)
+            .forEach(partition -> partitions.put(partition.id(), partition));
+    }
+
+    @Override
+    public String uri() {
+        return uri;
     }
 
     @Override
@@ -40,6 +61,11 @@ public class KafkaSource implements Source {
     @Override
     public Collection<Partition> getPartitions() {
         return partitions.values();
+    }
+
+    @Override
+    public String toString() {
+        return uri;
     }
 
     private static Collection<Partition> getPartitions(String host, int port, String topic) throws IOException {

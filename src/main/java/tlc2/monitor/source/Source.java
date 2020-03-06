@@ -13,36 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.source;
+package tlc2.monitor.source;
 
-import java.io.IOException;
+import java.util.Collection;
 
 /**
- * Source partition.
+ * Monitoring source.
+ * <p>
+ * Sources may provide one or many partitions. Each partition is assumed to provide a global total order
+ * to provide deterministic traces for the model checker. Order is not assumed across partitions.
  */
-public interface Partition {
+public interface Source {
 
     /**
-     * Returns the partition identifier.
+     * Returns the source URI.
      *
-     * @return the partition identifier
+     * @return the source URI
      */
-    int id();
+    String uri();
 
     /**
-     * Returns the position of the first offset exceeding the given timestamp.
+     * Returns a partition by ID.
      *
-     * @param timestamp the timestamp for which to search
-     * @return the first offset exceeding the given timestamp
+     * @param partition the partition ID
+     * @return the partition
      */
-    long offset(long timestamp) throws IOException;
+    Partition getPartition(int partition);
 
     /**
-     * Gets the given offset.
+     * Returns the partitions for the source.
      *
-     * @param offset the offset to get
-     * @return the record
-     * @throws IOException if the get fails
+     * @return the partitions for the source
      */
-    Record get(long offset) throws IOException;
+    Collection<Partition> getPartitions();
 }

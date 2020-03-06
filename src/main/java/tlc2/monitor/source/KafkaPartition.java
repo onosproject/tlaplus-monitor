@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.source;
+package tlc2.monitor.source;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.kafka.clients.consumer.Consumer;
@@ -25,7 +25,10 @@ import tlc2.overrides.JsonUtils;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.time.Duration;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -62,6 +65,9 @@ public class KafkaPartition implements Partition {
         Map<TopicPartition, Long> times = new HashMap<>();
         times.put(partition, timestamp);
         endOffset = consumer.offsetsForTimes(times).get(partition).offset();
+        if (endOffset == 0) {
+            return 1;
+        }
         return endOffset;
     }
 
@@ -78,6 +84,11 @@ public class KafkaPartition implements Partition {
             record = this.records.get(offset);
         }
         return record;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s/%d", partition.topic(), partition.partition());
     }
 
     private static Consumer<String, String> getConsumer(String host, int port, String topic, int partition) throws IOException {

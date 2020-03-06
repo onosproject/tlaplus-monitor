@@ -15,23 +15,29 @@
  */
 package tlc2.overrides;
 
-import tlc2.overrides.source.Partition;
-import tlc2.overrides.source.Record;
-import tlc2.overrides.source.Source;
-import tlc2.overrides.source.Sources;
+import tlc2.monitor.source.KafkaSource;
+import tlc2.monitor.source.Partition;
+import tlc2.monitor.source.Record;
+import tlc2.monitor.source.Source;
+import tlc2.monitor.util.Logger;
+import tlc2.monitor.util.ModuleLogger;
 import tlc2.value.impl.IntValue;
 import tlc2.value.impl.Value;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 /**
  * Trace utilities.
  */
 public class Traces {
-    private static final String TRACE_SOURCE = "TRACE_SOURCE";
-    private static final String TRACE_PARTITION = "TRACE_PARTITION";
-    private static final String TRACE_START_TIMESTAMP = "TRACE_START_TIMESTAMP";
-    private static final String TRACE_END_TIMESTAMP = "TRACE_END_TIMESTAMP";
+    private static final Logger LOGGER = new ModuleLogger();
+
+    public static final String SOURCE_ENV = "TLC_TRACES_SOURCE";
+    public static final String PARTITION_ENV = "TLC_TRACES_PARTITION";
+    public static final String WINDOW_START_ENV = "TLC_TRACES_WINDOW_START";
+    public static final String WINDOW_END_ENV = "TLC_TRACES_WINDOW_END";
+
     private static final Source SOURCE;
     private static final Partition PARTITION;
 
@@ -40,18 +46,23 @@ public class Traces {
 
     private static Long upperBound;
 
-    private static Source getSource() {
-        String source = System.getenv(TRACE_SOURCE);
-        if (source != null) {
-            return Sources.getSource(source);
-        }
-        return null;
-    }
-
     static {
-        SOURCE = getSource();
+        String uri = System.getenv(SOURCE_ENV);
+        if (uri != null) {
+            Source source = null;
+            try {
+                source = new KafkaSource(uri);
+            } catch (URISyntaxException | IOException e) {
+                LOGGER.log("Failed to load source %s: %s", uri, e);
+                e.printStackTrace();
+            }
+            SOURCE = source;
+        } else {
+            SOURCE = null;
+        }
+
         if (SOURCE != null) {
-            int partitionId = Integer.valueOf(System.getenv(TRACE_PARTITION));
+            int partitionId = Integer.valueOf(System.getenv(PARTITION_ENV));
             PARTITION = SOURCE.getPartition(partitionId);
         } else {
             PARTITION = null;
@@ -59,13 +70,13 @@ public class Traces {
     }
 
     static {
-        String startTime = System.getenv(TRACE_START_TIMESTAMP);
+        String startTime = System.getenv(WINDOW_START_ENV);
         if (startTime != null) {
             START_TIME = Long.parseLong(startTime);
         } else {
             START_TIME = null;
         }
-        String endTime = System.getenv(TRACE_END_TIMESTAMP);
+        String endTime = System.getenv(WINDOW_END_ENV);
         if (endTime != null) {
             END_TIME = Long.parseLong(endTime);
         } else {
@@ -73,11 +84,15 @@ public class Traces {
         }
     }
 
+    private static void assertSource() {
+        if (SOURCE == null) {
+            throw new IllegalStateException("No source configured. Are you sure TLC is running in monitor mode?");
+        }
+    }
+
     @TLAPlusOperator(identifier = "LowerBound", module = "Traces")
     public static Value lowerBound() throws IOException {
-        if (SOURCE == null) {
-            throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
-        }
+        assertSource();
 
         // If the start time is not set, return an infinite lower bound.
         if (START_TIME == null) {
@@ -94,20 +109,15 @@ public class Traces {
 
     @TLAPlusOperator(identifier = "UpperBound", module = "Traces")
     public static Value upperBound() throws IOException {
-        if (SOURCE == null) {
-            throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
-        }
+        assertSource();
 
         // If the end time is not set, return an infinite upper bound.
         if (END_TIME == null) {
             return IntValue.gen(Integer.MAX_VALUE);
         }
 
-        // Get the upper bound.
-        Long offset = upperBound;
-
         // If the upper bound is not set, get the upper bound from the partition.
-        if (upperBound() == null) {
+        if (upperBound == null) {
             long endOffset = PARTITION.offset(END_TIME);
             if (endOffset == 0) {
                 upperBound = 1L;
@@ -119,22 +129,16 @@ public class Traces {
 
         // Get the next offset and return the offset if it exceeds the upper bound timestamp, otherwise
         // return the offset + 1.
-        Record record = PARTITION.get(offset);
+        Record record = PARTITION.get(upperBound + 1);
         if (record.timestamp() >= END_TIME) {
-            return IntValue.gen((int) (long) offset);
+            return IntValue.gen((int) (long) upperBound);
         }
-        return IntValue.gen((int) (long) offset + 1);
+        return IntValue.gen((int) (long) upperBound + 1);
     }
 
     @TLAPlusOperator(identifier = "Trace", module = "Traces")
     public static Value trace(IntValue offset) throws IOException {
-        if (SOURCE == null) {
-            throw new IllegalStateException("No consumer configured. Is TLC running in monitor mode?");
-        }
-
-        // Get the next record and set the upper bound
-        upperBound = (long) offset.val + 1;
-        Value value = PARTITION.get(offset.val).value();
-        return value;
+        assertSource();
+        return PARTITION.get(offset.val).value();
     }
 }

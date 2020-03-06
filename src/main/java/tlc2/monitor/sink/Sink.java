@@ -13,16 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tlc2.overrides.sink;
+package tlc2.monitor.sink;
 
 import tlc2.value.IValue;
 
 import java.io.IOException;
 
 /**
- * Monitoring producer.
+ * Monitoring sink.
  */
 public interface Sink {
+
+    /**
+     * Returns the sink URI.
+     *
+     * @return the sink URI
+     */
+    String uri();
+
     /**
      * Produces a value.
      *

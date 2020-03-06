@@ -15,52 +15,51 @@
  */
 package tlc2.overrides;
 
-import tlc2.overrides.sink.KafkaSink;
-import tlc2.overrides.sink.Sink;
+import tlc2.monitor.sink.KafkaSink;
+import tlc2.monitor.sink.Sink;
+import tlc2.monitor.util.Logger;
+import tlc2.monitor.util.ModuleLogger;
 import tlc2.value.IValue;
 import tlc2.value.impl.BoolValue;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.URISyntaxException;
 
 /**
- * Alert utilities.
+ * TLA+ module for publishing alerts to a configurable sink.
  */
 public class Alerts {
-    private static final String ALERT_SINK = "ALERT_SINK";
+    private static final Logger LOGGER = new ModuleLogger();
+
+    public static final String SINK_ENV = "TLC_ALERTS_SINK";
 
     private static final Sink SINK;
 
     static {
-        String producerInfo = System.getenv(ALERT_SINK);
-        if (producerInfo != null) {
+        String uri = System.getenv(SINK_ENV);
+        if (uri != null) {
+            Sink sink = null;
             try {
-                URI producerUri = new URI(producerInfo);
-                switch (producerUri.getScheme()) {
-                    case "kafka":
-                        String path = producerUri.getPath().substring(1);
-                        if (path.equals("")) {
-                            throw new IllegalStateException("No topic specified");
-                        }
-                        SINK = new KafkaSink(producerUri.getHost(), producerUri.getPort(), path);
-                        break;
-                    default:
-                        throw new IllegalStateException("Unknown producer scheme");
-                }
+                sink = new KafkaSink(uri);
             } catch (URISyntaxException | IOException e) {
-                throw new IllegalStateException(e);
+                LOGGER.log("Failed to load sink %s: %s", uri, e);
+                e.printStackTrace();
             }
+            SINK = sink;
         } else {
             SINK = null;
         }
     }
 
-    @TLAPlusOperator(identifier = "Alert", module = "Alerts")
-    public static synchronized IValue publishAlert(IValue value) throws IOException {
+    private static void assertSink() {
         if (SINK == null) {
-            throw new IllegalStateException("No producer configured. Is TLC running in monitor mode?");
+            throw new IllegalStateException("No sink configured. Are you sure TLC is running in monitor mode?");
         }
+    }
+
+    @TLAPlusOperator(identifier = "Alert", module = "Alerts")
+    public static synchronized IValue alert(IValue value) throws IOException {
+        assertSink();
         SINK.produce(value);
         return BoolValue.ValTrue;
     }
