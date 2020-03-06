@@ -23,15 +23,17 @@ import java.util.List;
  */
 final class TLCMonitorConfig {
     private final boolean monitor;
-    private final File directory;
+    private final File moduleDir;
+    private final File metaDir;
     private final String source;
     private final String sink;
     private final long window;
     private final List<String> args;
 
-    TLCMonitorConfig(boolean monitor, File directory, String source, String sink, long window, List<String> args) {
+    TLCMonitorConfig(boolean monitor, File moduleDir, File metaDir, String source, String sink, long window, List<String> args) {
         this.monitor = monitor;
-        this.directory = directory;
+        this.moduleDir = moduleDir;
+        this.metaDir = metaDir;
         this.source = source;
         this.sink = sink;
         this.window = window;
@@ -48,12 +50,21 @@ final class TLCMonitorConfig {
     }
 
     /**
-     * Returns the working directory.
+     * Returns the module directory.
      *
-     * @return the working directory
+     * @return the module directory
      */
-    public File getDirectory() {
-        return directory;
+    File getModuleDir() {
+        return moduleDir;
+    }
+
+    /**
+     * Returns the metadata directory.
+     *
+     * @return the metadata directory
+     */
+    File getMetaDir() {
+        return metaDir;
     }
 
     /**

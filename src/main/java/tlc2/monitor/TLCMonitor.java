@@ -95,6 +95,7 @@ public class TLCMonitor {
 
         String spec = null;
         String config = null;
+        File metaDir = new File(System.getProperty("user.dir"), "data");
 
         int i = 0;
         while (i < args.length) {
@@ -119,6 +120,10 @@ public class TLCMonitor {
                     config = args[i + 1];
                     i += 2;
                     break;
+                case "-metadir":
+                    metaDir = new File(args[i + 1]);
+                    i += 2;
+                    break;
                 default:
                     if (args[i].startsWith("-")) {
                         tlcArgs.add(args[i]);
@@ -137,7 +142,7 @@ public class TLCMonitor {
         }
 
         // If monitoring is enabled, configure action constraints.
-        File directory = new File(System.getProperty("user.dir"));
+        File moduleDir = new File(System.getProperty("user.dir"));
         if (monitor) {
             // If no source is configured, throw an exception.
             if (source == null) {
@@ -159,7 +164,7 @@ public class TLCMonitor {
             // If a configuration is set, modify it to add the sliding window constraint.
             if (configFile != null) {
                 // Create a temporary root module and configuration file.
-                directory = specFile.getParentFile();
+                moduleDir = specFile.getParentFile();
                 File tempSpecFile = new File(TMP_DIR, "MC.tla");
                 Files.copy(specFile.toPath(), tempSpecFile.toPath());
                 File tempConfigFile = new File(TMP_DIR, "MC.cfg");
@@ -187,9 +192,15 @@ public class TLCMonitor {
                 tlcArgs.add(spec);
             }
         } else {
+            tlcArgs.add("-metadir");
+            tlcArgs.add(metaDir.getAbsolutePath());
+            if (config != null) {
+                tlcArgs.add("-config");
+                tlcArgs.add(config);
+            }
             tlcArgs.add(spec);
         }
-        return new TLCMonitorConfig(monitor, directory, source, sink, window, tlcArgs);
+        return new TLCMonitorConfig(monitor, moduleDir, metaDir, source, sink, window, tlcArgs);
     }
 
     /**

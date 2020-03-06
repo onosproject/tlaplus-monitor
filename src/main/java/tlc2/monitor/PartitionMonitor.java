@@ -24,6 +24,7 @@ import tlc2.monitor.util.Logger;
 import tlc2.overrides.Alerts;
 import tlc2.overrides.Traces;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -119,13 +120,13 @@ final class PartitionMonitor {
         env.put(Traces.WINDOW_START_ENV, String.valueOf(startTime));
         env.put(Traces.WINDOW_END_ENV, String.valueOf(endTime));
         env.put(Alerts.SINK_ENV, sink.uri());
-        env.put("CLASSPATH", String.format("%s:%s", System.getProperty("java.class.path"), config.getDirectory().getAbsolutePath()));
+        env.put("CLASSPATH", String.format("%s:%s", System.getProperty("java.class.path"), config.getModuleDir().getAbsolutePath()));
 
         // Modify the TLC arguments to ensure the metadir is writable and TLC does not exit on invariant violations.
         List<String> args = new ArrayList<>(config.getArgs());
         if (!args.contains("-metadir")) {
             args.add("-metadir");
-            args.add(String.format("/opt/tlaplus/data/%d", partition.id()));
+            args.add(new File(config.getMetaDir(), String.valueOf(partition.id())).getAbsolutePath());
         }
         if (!args.contains("-continue")) {
             args.add("-continue");
