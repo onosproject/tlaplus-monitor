@@ -30,12 +30,12 @@ The [TLC Docker image](#docker-image) extends TLC to facilitate conformance moni
 provide cleaner syntax for conformance monitoring specifications. The TLC image supports
 the following additional flags:
 * `-monitor` - Runs TLC in monitoring mode
-* `-trace [source]` - Sets the traces source URI (e.g. `kafka://kafka-service:9092/traces`)
-* `-alert [sink]` - Sets the alerts sink URI (e.g. `kafka://kafka-service:9092/alerts`)
+* `-source [source]` - Sets the traces source URI (e.g. `kafka://kafka-service:9092/traces`)
+* `-sink [sink]` - Sets the alerts sink URI (e.g. `kafka://kafka-service:9092/alerts`)
 * `-window [duration]` - Sets the duration for sliding windows
 
 ```bash
-$ docker run -v ~/Foo:/opt/tlaplus/model -it onosproject/tlaplus-monitor:latest /opt/tlaplus/model/Foo.tla -monitor -trace kafka://kafka:9092/traces
+$ docker run -v ~/Foo:/opt/tlaplus/model -it onosproject/tlaplus-monitor:latest /opt/tlaplus/model/Foo.tla -monitor -source kafka://kafka:9092/traces
 ```
 
 ## TLA+ Operators
@@ -48,11 +48,11 @@ monitoring with TLC in Docker.
 The `Traces` module provides operators for consuming traces from an external system
 in TLA+. Trace consumer operators block until the next trace becomes available and
 parses JSON encoded values into TLA+ types. To use the `Traces` module, you must
-set the `-trace` flag when running the [Docker image](#docker-image) or configure
-the `TRACES_SOURCE` environment variable with the source URI:
+set the `-source` flag when running the [Docker image](#docker-image) or configure
+the `TLC_TRACES_SOURCE` environment variable with the source URI:
 
 ```
-$ docker run -v ~/Foo:/opt/tlaplus/model -it onosproject/tlaplus-monitor:latest /opt/tlaplus/model/Foo.tla -monitor -trace kafka://kafka:9092/traces
+$ docker run -v ~/Foo:/opt/tlaplus/model -it onosproject/tlaplus-monitor:latest /opt/tlaplus/model/Foo.tla -monitor -source kafka://kafka:9092/traces
 ```
 
 To consume traces, create an instance of the `Traces` module:
@@ -76,12 +76,12 @@ NEXT ==
 ### Alerts
 
 The `Alerts` module provides operators for publishing alerts to an external system
-from TLA+. To use the `Alerts` module, you must set the `-alert` flag when running
-the [Docker image](#docker-image) or configure the `ALERTS_SINK` environment
+from TLA+. To use the `Alerts` module, you must set the `-sink` flag when running
+the [Docker image](#docker-image) or configure the `TLC_ALERTS_SINK` environment
 variable with the URI to which to publish alerts:
 
 ```
-$ docker run -v ~/Foo:/opt/tlaplus/model -it onosproject/tlaplus-monitor:latest /opt/tlaplus/model/Foo.tla -monitor -alert kafka://kafka:9092/alerts
+$ docker run -v ~/Foo:/opt/tlaplus/model -it onosproject/tlaplus-monitor:latest /opt/tlaplus/model/Foo.tla -monitor -source kafka://kafka:9092/traces -sink kafka://kafka:9092/alerts
 ```
 
 To publish alerts, create an instance of the `Alerts` module:
@@ -90,11 +90,11 @@ To publish alerts, create an instance of the `Alerts` module:
 INSTANCE Alerts
 ```
 
-Use the `PublishAlert` operator to publish an alert to the configured sink:
+Use the `Alert` operator to publish an alert to the configured sink:
 
 ```
 LET alert == [msg = "Invariant violated", id |-> id]
-IN PublishAlert(alert)
+IN Alert(alert)
 ```
 
 ### JsonUtils
