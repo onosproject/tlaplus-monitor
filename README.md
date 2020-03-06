@@ -32,6 +32,7 @@ the following additional flags:
 * `-monitor` - Runs TLC in monitoring mode
 * `-trace [source]` - Sets the traces source URI (e.g. `kafka://kafka-service:9092/traces`)
 * `-alert [sink]` - Sets the alerts sink URI (e.g. `kafka://kafka-service:9092/alerts`)
+* `-window [duration]` - Sets the duration for sliding windows
 
 ```bash
 $ docker run -v ~/Foo:/opt/tlaplus/model -it onosproject/tlaplus-monitor:latest /opt/tlaplus/model/Foo.tla -monitor -trace kafka://kafka:9092/traces
@@ -60,11 +61,16 @@ To consume traces, create an instance of the `Traces` module:
 INSTANCE Traces
 ```
 
-Use the `NextTrace` operator to wait for the next trace to become available
-and read it:
+Call the `Trace` operator to consume the trace at a specific offset:
 
 ```
-LET trace == NextTrace IN ...
+VARIABLE offset
+
+INIT == offset = 0
+
+NEXT ==
+    /\ offset' = offset + 1
+    /\ LET trace == Trace(offset') IN ...
 ```
 
 ### Alerts
