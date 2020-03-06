@@ -16,10 +16,10 @@
 package tlc2.overrides;
 
 import tlc2.TLCGlobals;
-import tlc2.monitor.source.KafkaSource;
 import tlc2.monitor.source.Partition;
 import tlc2.monitor.source.Record;
 import tlc2.monitor.source.Source;
+import tlc2.monitor.source.Sources;
 import tlc2.monitor.util.Logger;
 import tlc2.monitor.util.ModuleLogger;
 import tlc2.tool.ModelChecker;
@@ -57,7 +57,7 @@ public class Traces {
         if (uri != null) {
             Source source = null;
             try {
-                source = new KafkaSource(uri);
+                source = Sources.getSource(uri);
             } catch (URISyntaxException | IOException e) {
                 LOGGER.log("Failed to load source %s: %s", uri, e);
                 e.printStackTrace();

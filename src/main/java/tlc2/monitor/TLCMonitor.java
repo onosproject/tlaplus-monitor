@@ -16,10 +16,10 @@
 package tlc2.monitor;
 
 import tlc2.TLC;
-import tlc2.monitor.sink.KafkaSink;
 import tlc2.monitor.sink.Sink;
-import tlc2.monitor.source.KafkaSource;
+import tlc2.monitor.sink.Sinks;
 import tlc2.monitor.source.Source;
+import tlc2.monitor.source.Sources;
 import tlc2.output.SpecWriterUtilities;
 import util.TLAConstants;
 
@@ -52,10 +52,8 @@ public class TLCMonitor {
         // If monitoring is enabled, run the TLC monitor.
         // Otherwise, run the TLC main with the original arguments.
         if (config.isMonitoringEnabled()) {
-            // A KafkaSource and KafkaSink are explicitly constructed from the source and sink URIs...
-            // TODO: Support additional sources and sinks based on the URI scheme
-            final Source source = new KafkaSource(config.getSource());
-            final Sink sink = config.getSink() != null ? new KafkaSink(config.getSink()) : null;
+            final Source source = Sources.getSource(config.getSource());
+            final Sink sink = config.getSink() != null ? Sinks.getSink(config.getSink()) : null;
 
             // Run the TLC monitor
             new TLCMonitor(source, sink, config).run();

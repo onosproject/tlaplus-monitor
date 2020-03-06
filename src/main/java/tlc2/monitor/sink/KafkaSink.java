@@ -29,7 +29,7 @@ import java.util.Properties;
  * Produces values to a Kafka topic.
  */
 public class KafkaSink implements Sink {
-    private static final String SCHEME = "kafka";
+    static final String SCHEME = "kafka";
 
     private final String uri;
     private final org.apache.kafka.clients.producer.Producer<String, String> producer;

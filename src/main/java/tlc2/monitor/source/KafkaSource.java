@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Consumes values from a Kafka topic.
  */
 public class KafkaSource implements Source {
-    private static final String SCHEME = "kafka";
+    static final String SCHEME = "kafka";
 
     private final String uri;
     private final Map<Integer, Partition> partitions = new ConcurrentHashMap<>();
