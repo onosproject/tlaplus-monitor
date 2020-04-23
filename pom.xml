@@ -37,7 +37,7 @@
         <!-- Core dependencies -->
         <kafka.version>2.4.0</kafka.version>
         <jackson.core.version>2.9.0</jackson.core.version>
-        <jackson.databind.version>2.9.10.3</jackson.databind.version>
+        <jackson.databind.version>2.9.10.4</jackson.databind.version>
 
         <!-- Maven plugins -->
         <maven.source.plugin.version>2.2.1</maven.source.plugin.version>
